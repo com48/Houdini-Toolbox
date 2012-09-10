@@ -19,6 +19,33 @@ import types
 import hou
 import inlinecpp
 
+
+def addMethod(*args,**kwargs):
+    """This decorator converts the function into an unbound method and adds
+    it to the specified class.
+    
+    specify the classes you want to add the function to in the *args.
+    you can override the name using a kwargs argument "name"
+    
+    example:
+    
+        @addMethod(hou.PrimGroup, hou.PointGroup, name="copy")
+        will add a function named "copy" to hou.PrimGroup and hou.PointGroup.
+        
+    """
+    def decorator(func):
+        for cls in args:
+            if "name" in kwargs:
+                use_name = kwargs["name"]
+            else:
+                use_name = func.__name__
+            
+            unbound_method = types.MethodType(func, None, cls)
+            setattr(cls, use_name, unbound_method)
+        return unbound_method
+    return decorator
+
+
 cpp_methods = inlinecpp.createLibrary("cpp_methods",
 includes="""
 #include <GA/GA_AttributeRefMap.h>
@@ -1509,6 +1536,7 @@ StringTuple getMultiParmInstances(OP_Node *node, const char *parm_name)
 
 ])
 
+@addMethod(hou.Geometry)
 def isReadOnly(self):
     """
     Check if the geometry is read only.
@@ -1532,6 +1560,7 @@ def isReadOnly(self):
     return result
 
 
+@addMethod(hou.Geometry)
 def varmap(self):
     """Get the varmap as a dictionary.
 
@@ -1577,6 +1606,7 @@ def varmap(self):
     return varmap_dict
 
 
+@addMethod(hou.Geometry)
 def createPoint(self, position=None):
     """Create a new point, optionally located at a position.
 
@@ -1600,6 +1630,7 @@ def createPoint(self, position=None):
     return self.iterPoints()[result]
 
 
+@addMethod(hou.Geometry)
 def createPoints(self, count):
     """Create a specific number of new points.
 
@@ -1624,6 +1655,7 @@ def createPoints(self, count):
     return self.globPoints(" ".join([str(i) for i in result]))
 
 
+@addMethod(hou.Geometry)
 def setVarmap(self, varmap_dict):
     """Set the varmap based on the dictionary.
 
@@ -1653,6 +1685,7 @@ def setVarmap(self, varmap_dict):
     cpp_methods.setVarmap(self, arr, len(strings))
 
 
+@addMethod(hou.Geometry)
 def addVariableName(self, attrib, var_name):
     """Add a variable mapping to the attribute in the varmap.
 
@@ -1670,6 +1703,7 @@ def addVariableName(self, attrib, var_name):
     cpp_methods.addVariableName(self, attrib.name(), var_name)
 
 
+@addMethod(hou.Geometry)
 def removeVariableName(self, var_name):
     """Remove a variable mapping from the varmap.
 
@@ -1684,7 +1718,7 @@ def removeVariableName(self, var_name):
     """
     cpp_methods.removeVariableName(self, var_name)
 
-
+@addMethod(hou.Attrib,name="rename")
 def renameAttribute(self, new_name):
     """Rename the attribute.
 
@@ -1742,6 +1776,7 @@ def renameAttribute(self, new_name):
     return None
 
 
+@addMethod(hou.Geometry)
 def findPrimByName(self,
                    name_to_match,
                    name_attribute="name",
@@ -1779,7 +1814,8 @@ def findPrimByName(self,
     #  Return the primitive.
     return self.iterPrims()[result]
 
-
+    
+@addMethod(hou.Geometry)
 def findAllPrimsByName(self, name_to_match, name_attribute="name"):
     """Find all primitives with a matching name attribute value.
 
@@ -1809,7 +1845,7 @@ def findAllPrimsByName(self, name_to_match, name_attribute="name"):
     # If none were found, return an empty tuple.
     return ()
 
-
+@addMethod(hou.Point, name="copyAttributeValues")
 def copyPointAttributeValues(self, source_point, attributes):
     """Copy the attribute values from the source point.
 
@@ -1852,7 +1888,7 @@ def copyPointAttributeValues(self, source_point, attributes):
                                          arr,
                                          num_attribs)
 
-
+@addMethod(hou.Prim, name="copyAttributeValues")
 def copyPrimAttributeValues(self, source_prim, attributes):
     """Copy the attribute values from the source primitive.
 
@@ -1895,7 +1931,7 @@ def copyPrimAttributeValues(self, source_prim, attributes):
                                         arr,
                                         num_attribs)
 
-
+@addMethod(hou.Point)
 def connectedPrims(self):
     """Get all primitives that reference the point.
 
@@ -1917,6 +1953,7 @@ def connectedPrims(self):
     return geometry.globPrims(' '.join([str(i) for i in result]))
 
 
+@addMethod(hou.Point)
 def connectedPoints(self):
     """Get all points that share an edge with the point.
 
@@ -1940,7 +1977,8 @@ def connectedPoints(self):
     # Glob for the points and return them.
     return geometry.globPoints(' '.join([str(i) for i in result]))
 
-
+    
+@addMethod(hou.Point)
 def referencingVertices(self):
     """Get all the vertices that reference the point.
 
@@ -1968,7 +2006,8 @@ def referencingVertices(self):
     # Glob for the vertices and return them.
     return geometry.globVertices(' '.join(vertex_strings))
 
-
+    
+@addMethod(hou.Geometry)
 def primStringAttribValues(self, name):
     """Return a tuple of strings containing one attribute's values for
     all the primitives.
@@ -1998,6 +2037,7 @@ def primStringAttribValues(self, name):
     return cpp_methods.primStringAttribValues(self, name)
 
 
+@addMethod(hou.Geometry)
 def setPrimStringAttribValues(self, name, values):
     """Set the string attribute values for all primitives.
 
@@ -2035,6 +2075,7 @@ def setPrimStringAttribValues(self, name, values):
                                                  len(values))
 
 
+@addMethod(hou.Geometry)
 def setSharedPrimStringAttrib(self, attribute, value, group=None):
     """Set a string attribute value for primitives.
 
@@ -2074,6 +2115,7 @@ def setSharedPrimStringAttrib(self, attribute, value, group=None):
         raise hou.OperationFailed("Invalid attribute.")
 
 
+@addMethod(hou.Geometry)
 def pointStringAttribValues(self, name):
     """Return a tuple of strings containing one attribute's values for
     all the points.
@@ -2102,7 +2144,8 @@ def pointStringAttribValues(self, name):
 
     return cpp_methods.pointStringAttribValues(self, name)
 
-
+    
+@addMethod(hou.Geometry)
 def setPointStringAttribValues(self, name, values):
     """Set the string attribute values for all points.
 
@@ -2140,6 +2183,7 @@ def setPointStringAttribValues(self, name, values):
                                                   len(values))
 
 
+@addMethod(hou.Geometry)
 def setSharedPointStringAttrib(self, attribute, value, group=None):
     """Set a string attribute value for points.
 
@@ -2178,6 +2222,7 @@ def setSharedPointStringAttrib(self, attribute, value, group=None):
         raise hou.OperationFailed("Invalid attribute.")
 
 
+@addMethod(hou.Face)
 def hasEdge(self, point1, point2):
     """Test if a face has an edge between two points.
 
@@ -2201,7 +2246,8 @@ def hasEdge(self, point1, point2):
                                point1.number(),
                                point2.number())
 
-
+                                   
+@addMethod(hou.Face)
 def insertVertex(self, point, index):
     """Insert a vertex referencing the point into the face at a specific index.
 
@@ -2222,7 +2268,8 @@ def insertVertex(self, point, index):
                              point.number(),
                              index)
 
-
+                                 
+@addMethod(hou.Face)
 def deleteVertex(self, index):
     """Delete the vertex at the specified index.
 
@@ -2240,7 +2287,8 @@ def deleteVertex(self, index):
                              self.number(),
                              index)
 
-
+                                 
+@addMethod(hou.Prim)
 def setPoint(self, index, point):
     """Set the vertex, at the specified index, to be attached to the point.
 
@@ -2261,7 +2309,8 @@ def setPoint(self, index, point):
                          index,
                          point.number())
 
-
+                             
+@addMethod(hou.Prim)
 def baryCenter(self):
     """Get the barycenter of the primitive.
 
@@ -2282,6 +2331,7 @@ def baryCenter(self):
     return hou.Vector3(pos.x, pos.y, pos.z)
 
 
+@addMethod(hou.Prim, name="area")
 def primitiveArea(self):
     """Get the area of the primitive.
 
@@ -2298,7 +2348,8 @@ def primitiveArea(self):
     return cpp_methods.primitiveArea(self.geometry(),
                                      self.number())
 
-
+                                     
+@addMethod(hou.Prim)
 def perimeter(self):
     """Get the perimeter of the primitive.
 
@@ -2316,6 +2367,7 @@ def perimeter(self):
                                  self.number())
 
 
+@addMethod(hou.Prim,name="reverse")
 def reversePrim(self):
     """Reverse the order of vertices.
 
@@ -2330,6 +2382,7 @@ def reversePrim(self):
                                self.number())
 
 
+@addMethod(hou.Prim)
 def makeUnique(self):
     """Unique all the points that are in the primitive.
 
@@ -2347,6 +2400,7 @@ def makeUnique(self):
                                   self.number())
 
 
+@addMethod(hou.Prim)
 def boundingBox(self):
     """Get the bounding box of the primitive.
 
@@ -2368,6 +2422,7 @@ def boundingBox(self):
                            bounds.xmax, bounds.ymax, bounds.zmax)
 
 
+@addMethod(hou.PrimGroup, hou.PointGroup ,name="boundingBox")
 def groupBoundingBox(self):
     """Get the bounding box of the group.
 
@@ -2393,6 +2448,7 @@ def groupBoundingBox(self):
                            bounds.xmax, bounds.ymax, bounds.zmax)
 
 
+@addMethod(hou.Geometry, name="addPointNormals")
 def addNormalAttribute(self):
     """Add point normals to the geometry.
 
@@ -2415,6 +2471,7 @@ def addNormalAttribute(self):
     raise hou.OperationFailed("Could not add normal attribute.")
 
 
+@addMethod(hou.Geometry, name="addPointVelocity")
 def addVelocityAttribute(self):
     """Add point velocity to the geometry.
 
@@ -2437,6 +2494,7 @@ def addVelocityAttribute(self):
     raise hou.OperationFailed("Could not add velocity attribute.")
 
 
+@addMethod(hou.Geometry)
 def addColorAttribute(self, attrib_type):
     """Add a color (Cd) attribute to the geometry.
 
@@ -2489,6 +2547,7 @@ def addColorAttribute(self, attrib_type):
     raise hou.OperationFailed("Could not add Cd attribute.")
 
 
+@addMethod(hou.Geometry)
 def computePointNormals(self):
     """Computes the point normals for the geometry.
 
@@ -2506,6 +2565,7 @@ def computePointNormals(self):
     cpp_methods.computePointNormals(self)
 
 
+@addMethod(hou.Geometry)
 def convex(self, max_points=3):
     """Convex the geometry into polygons with a certain number of
     points.
@@ -2525,6 +2585,7 @@ def convex(self, max_points=3):
     cpp_methods.convexPolygons(self, max_points)
 
 
+@addMethod(hou.Geometry)
 def destroyEmptyPointGroups(self):
     """Remove any empty point groups.
 
@@ -2538,6 +2599,7 @@ def destroyEmptyPointGroups(self):
     cpp_methods.destroyEmptyPointGroups(self)
 
 
+@addMethod(hou.Geometry)
 def destroyEmptyPrimGroups(self):
     """Remove any empty primitive groups.
 
@@ -2551,6 +2613,7 @@ def destroyEmptyPrimGroups(self):
     cpp_methods.destroyEmptyPrimGroups(self)
 
 
+@addMethod(hou.Geometry)
 def destroyUnusedPoints(self, group=None):
     """Remove any unused points.
 
@@ -2572,6 +2635,7 @@ def destroyUnusedPoints(self, group=None):
         cpp_methods.destroyUnusedPoints(self, 0)
 
 
+@addMethod(hou.Geometry)
 def consolidatePoints(self, distance=0.001, group=None):
     """Consolidate points within a specified distance.
 
@@ -2592,6 +2656,7 @@ def consolidatePoints(self, distance=0.001, group=None):
         cpp_methods.consolidatePoints(self, distance, 0)
 
 
+@addMethod(hou.Geometry)
 def uniquePoints(self, group=None):
     """Unique all points in the geometry.
 
@@ -2621,7 +2686,7 @@ def uniquePoints(self, group=None):
     else:
         cpp_methods.uniquePoints(self, 0, 0)
 
-
+@addMethod(hou.PointGroup,name="toggle")
 def togglePoint(self, point):
     """Toggle group membership for a point.
 
@@ -2642,6 +2707,7 @@ def togglePoint(self, point):
     cpp_methods.toggle(geometry, self.name(), 0, point.number())
 
 
+@addMethod(hou.PrimGroup ,name="toggle")
 def togglePrim(self, prim):
     """Toggle group membership for a primitive.
 
@@ -2662,6 +2728,7 @@ def togglePrim(self, prim):
     cpp_methods.toggle(geometry, self.name(), 1, prim.number())
 
 
+@addMethod(hou.PrimGroup,hou.PointGroup)
 def toggleEntries(self):
     """Toggle group membership for all elements in the group.
 
@@ -2686,6 +2753,7 @@ def toggleEntries(self):
     cpp_methods.toggleEntries(geometry, self.name(), group_type)
 
 
+@addMethod(hou.PrimGroup, hou.PointGroup, name="copy")
 def copyGroup(self, new_group_name):
     """Create a group under the new name with the same membership.
 
@@ -2731,6 +2799,7 @@ def copyGroup(self, new_group_name):
     cpp_methods.copyGroup(geometry, group_type, self.name(), new_group_name)
 
 
+@addMethod(hou.PrimGroup, hou.PointGroup, name="containsAny")
 def primGroupContainsAny(self, group):
     """Returns whether or not any prims in the group are in this group.
 
@@ -2752,27 +2821,8 @@ def primGroupContainsAny(self, group):
     return cpp_methods.containsAny(geometry, self.name(), group.name(), 1)
 
 
-def pointGroupContainsAny(self, group):
-    """Returns whether or not any points in the group are in this group.
 
-    Args:
-        group (hou.PointGroup):
-            A point group which may have one or more points in
-            this group.
-
-    Returns:
-        (bool):
-            Returns True if the group has one or more points that are
-            in this group, otherwise False.
-
-    Raises: None
-
-    """
-    geometry = self.geometry()
-
-    return cpp_methods.containsAny(geometry, self.name(), group.name(), 0)
-
-
+@addMethod(hou.PrimGroup)
 def convertToPointGroup(self, new_group_name=None, destroy=True):
     """Create a new hou.Point group from this primitive group.
 
@@ -2812,6 +2862,7 @@ def convertToPointGroup(self, new_group_name=None, destroy=True):
     return geometry.findPointGroup(new_group_name)
 
 
+@addMethod(hou.PointGroup)
 def convertToPrimGroup(self, new_group_name=None, destroy=True):
     """Create a new hou.Prim group from this point group.
 
@@ -2850,7 +2901,8 @@ def convertToPrimGroup(self, new_group_name=None, destroy=True):
 
     return geometry.findPrimGroup(new_group_name)
 
-
+    
+@addMethod(hou.Geometry)
 def clip(self, normal, dist):
     """Clip the geometry along a plane.
 
@@ -2867,6 +2919,7 @@ def clip(self, normal, dist):
     cpp_methods.clip(self, normal.normalized(), dist)
 
 
+@addMethod(hou.BoundingBox)
 def isInside(self, bbox):
     """Determine if the bounding box is totally enclosed by the other box.
 
@@ -2884,7 +2937,8 @@ def isInside(self, bbox):
     """
     return cpp_methods.isInside(self, bbox)
 
-
+    
+@addMethod(hou.BoundingBox)
 def intersects(self, bbox):
     """Determine if the bounding boxes intersect.
 
@@ -2902,7 +2956,8 @@ def intersects(self, bbox):
     """
     return cpp_methods.intersects(self, bbox)
 
-
+    
+@addMethod(hou.BoundingBox)
 def computeIntersection(self, bbox):
     """Changes the bounds to be those of the intersection of this box
     and the supplied box.
@@ -2922,6 +2977,7 @@ def computeIntersection(self, bbox):
     return cpp_methods.computeIntersection(self, bbox)
 
 
+@addMethod(hou.BoundingBox)
 def expandBounds(self, dltx, dlty, dltz):
     """Expand the min and max bounds in each direction by the axis delta.
 
@@ -2940,7 +2996,8 @@ def expandBounds(self, dltx, dlty, dltz):
     """
     cpp_methods.expandBounds(self, dltx, dlty, dltz)
 
-
+    
+@addMethod(hou.BoundingBox)
 def addToMin(self, vec):
     """Add values to the minimum bounds.
 
@@ -2955,7 +3012,8 @@ def addToMin(self, vec):
     """
     cpp_methods.addToMin(self, vec)
 
-
+    
+@addMethod(hou.BoundingBox)
 def addToMax(self, vec):
     """Add values to the maximum bounds.
 
@@ -2971,6 +3029,7 @@ def addToMax(self, vec):
     cpp_methods.addToMax(self, vec)
 
 
+@addMethod(hou.BoundingBox, name = "area")
 def boundingBoxArea(self):
     """Calculate the area of the bounding box.
 
@@ -2985,7 +3044,8 @@ def boundingBoxArea(self):
     """
     cpp_methods.boundingBoxArea(self)
 
-
+    
+@addMethod(hou.BoundingBox, name = "volume")
 def boundingBoxVolume(self):
     """Calculate the volume of the bounding box.
 
@@ -3001,6 +3061,7 @@ def boundingBoxVolume(self):
     cpp_methods.boundingBoxVolume(self)
 
 
+@addMethod(hou.Parm, name ="isDefault")
 def isParmDefault(self):
     """Returns if a parameter is at its default value.
 
@@ -3024,7 +3085,7 @@ def isParmDefault(self):
                                      self.tuple().name(),
                                      index)
 
-
+@addMethod(hou.ParmTuple, name ="isDefault")
 def isParmTupleDefault(self):
     """Returns if parameter tuple is at its default values.
 
@@ -3044,6 +3105,7 @@ def isParmTupleDefault(self):
                                           self.name())
 
 
+@addMethod(hou.Parm)
 def getReferencingParms(self):
     """Returns a tuple of parameters that reference this parameter.
 
@@ -3068,6 +3130,7 @@ def getReferencingParms(self):
                   if parm_path])
 
 
+@addMethod(hou.Node)
 def inputLabel(self, index):
     """Returns the input label for the index.
 
@@ -3090,7 +3153,8 @@ def inputLabel(self, index):
 
     return cpp_methods.inputLabel(self, index)
 
-
+    
+@addMethod(hou.Node)
 def isContainedBy(self, node):
     """Test if this node is a contained within the node.
 
@@ -3108,7 +3172,8 @@ def isContainedBy(self, node):
     """
     return cpp_methods.isContainedBy(self, node)
 
-
+    
+@addMethod(hou.Node)
 def getExistingOpReferences(self, recurse=False):
     """Returns a tuple of nodes this node has references to.
 
@@ -3127,7 +3192,8 @@ def getExistingOpReferences(self, recurse=False):
 
     return tuple([hou.node(path) for path in result if path])
 
-
+    
+@addMethod(hou.Node)
 def getExistingOpDependents(self, recurse=False):
     """Returns a tuple of nodes that reference this node.
 
@@ -3147,6 +3213,7 @@ def getExistingOpDependents(self, recurse=False):
     return tuple([hou.node(path) for path in result if path])
 
 
+@addMethod(hou.Parm, hou.ParmTuple)
 def isMultiParm(self):
     """Check if a parameter is a multiparm.
 
@@ -3164,6 +3231,7 @@ def isMultiParm(self):
     return cpp_methods.isMultiParm(node, self.name())
 
 
+@addMethod(hou.Parm, hou.ParmTuple)
 def insertMultiParmItem(self, index):
     """Insert a multiparm item at the specified index.
 
@@ -3189,7 +3257,8 @@ def insertMultiParmItem(self, index):
 
     cpp_methods.insertMultiParmItem(node, self.name(), index)
 
-
+    
+@addMethod(hou.Parm, hou.ParmTuple)
 def removeMultiParmItem(self, index):
     """Remove a multiparm item at the specified index.
 
@@ -3215,7 +3284,8 @@ def removeMultiParmItem(self, index):
 
     cpp_methods.removeMultiParmItem(node, self.name(), index)
 
-
+    
+@addMethod(hou.Parm, hou.ParmTuple)
 def getMultiParmInstances(self):
     """Return all the parameters in the multiparm block.
 
@@ -3253,7 +3323,8 @@ def getMultiParmInstances(self):
 
     return tuple(multi_parms)
 
-
+    
+@addMethod(hou.Parm, hou.ParmTuple)
 def getMultiParmInstanceValues(self):
     """Return all the parameter values in the multiparm block.
 
@@ -3290,340 +3361,4 @@ def getMultiParmInstanceValues(self):
         all_values.append(tuple(values))
 
     return tuple(all_values)
-
-
-hou.Geometry.isReadOnly = types.MethodType(isReadOnly,
-                                           None,
-                                           hou.Geometry)
-
-hou.Geometry.createPoint = types.MethodType(createPoint,
-                                            None,
-                                            hou.Geometry)
-
-hou.Geometry.createPoints = types.MethodType(createPoints,
-                                             None,
-                                             hou.Geometry)
-
-hou.Geometry.varmap = types.MethodType(varmap,
-                                       None,
-                                       hou.Geometry)
-
-hou.Geometry.setVarmap = types.MethodType(setVarmap,
-                                          None,
-                                          hou.Geometry)
-
-hou.Geometry.addVariableName = types.MethodType(addVariableName,
-                                                None,
-                                                hou.Geometry)
-
-hou.Geometry.removeVariableName = types.MethodType(removeVariableName,
-                                                   None,
-                                                   hou.Geometry)
-
-hou.Attrib.rename = types.MethodType(renameAttribute,
-                                     None,
-                                     hou.Attrib)
-hou.Attrib.rename.__func__.__name__ = "rename"
-
-hou.Geometry.findPrimByName = types.MethodType(findPrimByName,
-                                               None,
-                                               hou.Geometry)
-
-hou.Geometry.findAllPrimsByName = types.MethodType(findAllPrimsByName,
-                                                   None,
-                                                   hou.Geometry)
-
-hou.Geometry.primStringAttribValues = types.MethodType(primStringAttribValues,
-                                                       None,
-                                                       hou.Geometry)
-
-hou.Geometry.setPrimStringAttribValues = types.MethodType(setPrimStringAttribValues,
-                                                          None,
-                                                          hou.Geometry)
-
-hou.Geometry.setSharedPrimStringAttrib = types.MethodType(setSharedPrimStringAttrib,
-                                                          None,
-                                                          hou.Geometry)
-
-hou.Geometry.pointStringAttribValues = types.MethodType(pointStringAttribValues,
-                                                        None,
-                                                        hou.Geometry)
-
-hou.Geometry.setPointStringAttribValues = types.MethodType(setPointStringAttribValues,
-                                                           None,
-                                                           hou.Geometry)
-
-hou.Geometry.setSharedPointStringAttrib = types.MethodType(setSharedPointStringAttrib,
-                                                           None,
-                                                           hou.Geometry)
-
-hou.Point.copyAttributeValues = types.MethodType(copyPointAttributeValues,
-                                                 None,
-                                                 hou.Point)
-hou.Point.copyAttributeValues.__func__.__name__ = "copyAttributeValues"
-
-hou.Prim.copyAttributeValues = types.MethodType(copyPrimAttributeValues,
-                                                None,
-                                                hou.Prim)
-hou.Prim.copyAttributeValues.__func__.__name__ = "copyAttributeValues"
-
-hou.Point.connectedPrims = types.MethodType(connectedPrims,
-                                            None,
-                                            hou.Point)
-
-hou.Point.connectedPoints = types.MethodType(connectedPoints,
-                                             None,
-                                             hou.Point)
-
-hou.Point.referencingVertices = types.MethodType(referencingVertices,
-                                                 None,
-                                                 hou.Point)
-
-hou.Face.hasEdge = types.MethodType(hasEdge,
-                                    None,
-                                    hou.Face)
-
-hou.Face.insertVertex = types.MethodType(insertVertex,
-                                         None,
-                                         hou.Face)
-
-hou.Face.deleteVertex = types.MethodType(deleteVertex,
-                                         None,
-                                         hou.Face)
-
-hou.Prim.setPoint = types.MethodType(setPoint,
-                                     None,
-                                     hou.Prim)
-
-hou.Prim.baryCenter = types.MethodType(baryCenter,
-                                       None,
-                                       hou.Prim)
-
-hou.Prim.area = types.MethodType(primitiveArea,
-                                 None,
-                                 hou.Prim)
-hou.Prim.area.__func__.__name__ = "area"
-
-hou.Prim.perimeter = types.MethodType(perimeter,
-                                      None,
-                                      hou.Prim)
-
-hou.Prim.reverse = types.MethodType(reversePrim,
-                                    None,
-                                    hou.Prim)
-hou.Prim.reverse.__func__.__name__ = "reverse"
-
-hou.Prim.makeUnique = types.MethodType(makeUnique,
-                                       None,
-                                       hou.Prim)
-
-hou.Prim.boundingBox = types.MethodType(boundingBox,
-                                        None,
-                                        hou.Prim)
-
-hou.PrimGroup.boundingBox = types.MethodType(groupBoundingBox,
-                                             None,
-                                             hou.PrimGroup)
-hou.PrimGroup.boundingBox.__func__.__name__ = "boundingBox"
-
-hou.PrimGroup.toggle = types.MethodType(togglePrim,
-                                        None,
-                                        hou.PrimGroup)
-hou.PrimGroup.toggle.__func__.__name__ = "toggle"
-
-hou.PrimGroup.toggleEntries = types.MethodType(toggleEntries,
-                                               None,
-                                               hou.PrimGroup)
-
-hou.PrimGroup.copy = types.MethodType(copyGroup,
-                                      None,
-                                      hou.PrimGroup)
-hou.PrimGroup.copy.__func__.__name__ = "copy"
-
-hou.PrimGroup.containsAny = types.MethodType(primGroupContainsAny,
-                                             None,
-                                             hou.PrimGroup)
-hou.PrimGroup.containsAny.__func__.__name__ = "containsAny"
-
-hou.PrimGroup.convertToPointGroup = types.MethodType(convertToPointGroup,
-                                                     None,
-                                                     hou.PrimGroup)
-
-hou.PointGroup.boundingBox = types.MethodType(groupBoundingBox,
-                                              None,
-                                              hou.PointGroup)
-hou.PointGroup.boundingBox.__func__.__name__ = "boundingBox"
-
-hou.PointGroup.toggle = types.MethodType(togglePoint,
-                                        None,
-                                        hou.PointGroup)
-hou.PointGroup.toggle.__func__.__name__ = "toggle"
-
-hou.PointGroup.toggleEntries = types.MethodType(toggleEntries,
-                                                None,
-                                                hou.PointGroup)
-
-hou.PointGroup.copy = types.MethodType(copyGroup,
-                                      None,
-                                      hou.PointGroup)
-hou.PointGroup.copy.__func__.__name__ = "copy"
-
-hou.PointGroup.containsAny = types.MethodType(pointGroupContainsAny,
-                                              None,
-                                              hou.PointGroup)
-hou.PointGroup.containsAny.__func__.__name__ = "containsAny"
-
-hou.PointGroup.convertToPrimGroup = types.MethodType(convertToPrimGroup,
-                                                     None,
-                                                     hou.PointGroup)
-
-hou.Geometry.addPointNormals = types.MethodType(addNormalAttribute,
-                                                None,
-                                                hou.Geometry)
-hou.Geometry.addPointNormals.__func__.__name__ = "addPointNormals"
-
-hou.Geometry.addPointVelocity = types.MethodType(addVelocityAttribute,
-                                                 None,
-                                                 hou.Geometry)
-hou.Geometry.addPointVelocity.__func__.__name__ = "addPointVelocity"
-
-hou.Geometry.addColorAttribute = types.MethodType(addColorAttribute,
-                                                  None,
-                                                  hou.Geometry)
-
-hou.Geometry.computePointNormals = types.MethodType(computePointNormals,
-                                                    None,
-                                                    hou.Geometry)
-
-hou.Geometry.convex = types.MethodType(convex,
-                                       None,
-                                       hou.Geometry)
-
-hou.Geometry.destroyEmptyPointGroups = types.MethodType(destroyEmptyPointGroups,
-                                                        None,
-                                                        hou.Geometry)
-
-hou.Geometry.destroyEmptyPrimGroups = types.MethodType(destroyEmptyPrimGroups,
-                                                       None,
-                                                       hou.Geometry)
-
-hou.Geometry.destroyUnusedPoints = types.MethodType(destroyUnusedPoints,
-                                                    None,
-                                                    hou.Geometry)
-
-hou.Geometry.consolidatePoints = types.MethodType(consolidatePoints,
-                                                  None,
-                                                  hou.Geometry)
-
-hou.Geometry.uniquePoints = types.MethodType(uniquePoints,
-                                             None,
-                                             hou.Geometry)
-
-hou.Geometry.clip = types.MethodType(clip,
-                                     None,
-                                     hou.Geometry)
-
-hou.BoundingBox.isInside = types.MethodType(isInside,
-                                            None,
-                                            hou.BoundingBox)
-
-hou.BoundingBox.intersects = types.MethodType(intersects,
-                                              None,
-                                              hou.BoundingBox)
-
-hou.BoundingBox.computeIntersection = types.MethodType(computeIntersection,
-                                                       None,
-                                                       hou.BoundingBox)
-
-hou.BoundingBox.expandBounds = types.MethodType(expandBounds,
-                                                None,
-                                                hou.BoundingBox)
-
-hou.BoundingBox.addToMin = types.MethodType(addToMin,
-                                            None,
-                                            hou.BoundingBox)
-
-hou.BoundingBox.addToMax = types.MethodType(addToMax,
-                                            None,
-                                            hou.BoundingBox)
-
-hou.BoundingBox.area = types.MethodType(boundingBoxArea,
-                                        None,
-                                        hou.BoundingBox)
-hou.BoundingBox.area.__func__.__name__ = "area"
-
-hou.BoundingBox.volume = types.MethodType(boundingBoxVolume,
-                                        None,
-                                        hou.BoundingBox)
-hou.BoundingBox.volume.__func__.__name__ = "volume"
-
-hou.Parm.isDefault = types.MethodType(isParmDefault,
-                                      None,
-                                      hou.Parm)
-hou.Parm.isDefault.__func__.__name__ = "isDefault"
-
-hou.ParmTuple.isDefault = types.MethodType(isParmTupleDefault,
-                                           None,
-                                           hou.ParmTuple)
-hou.ParmTuple.isDefault.__func__.__name__ = "isDefault"
-
-hou.Parm.getReferencingParms = types.MethodType(getReferencingParms,
-                                                None,
-                                                hou.Parm)
-
-hou.Node.inputLabel = types.MethodType(inputLabel,
-                                       None,
-                                       hou.Node)
-
-hou.Node.isContainedBy = types.MethodType(isContainedBy,
-                                          None,
-                                          hou.Node)
-
-hou.Node.getExistingOpReferences = types.MethodType(getExistingOpReferences,
-                                                    None,
-                                                    hou.Node)
-
-hou.Node.getExistingOpDependents = types.MethodType(getExistingOpDependents,
-                                                    None,
-                                                    hou.Node)
-
-hou.Parm.isMultiParm = types.MethodType(isMultiParm,
-                                        None,
-                                        hou.Parm)
-
-hou.Parm.insertMultiParmItem = types.MethodType(insertMultiParmItem,
-                                                None,
-                                                hou.Parm)
-
-hou.Parm.removeMultiParmItem = types.MethodType(removeMultiParmItem,
-                                                None,
-                                                hou.Parm)
-
-hou.Parm.getMultiParmInstances = types.MethodType(getMultiParmInstances,
-                                                  None,
-                                                  hou.Parm)
-
-hou.Parm.getMultiParmInstanceValues = types.MethodType(getMultiParmInstanceValues,
-                                                       None,
-                                                       hou.Parm)
-
-hou.ParmTuple.isMultiParm = types.MethodType(isMultiParm,
-                                             None,
-                                             hou.ParmTuple)
-
-hou.ParmTuple.insertMultiParmItem = types.MethodType(insertMultiParmItem,
-                                                     None,
-                                                     hou.ParmTuple)
-
-hou.ParmTuple.removeMultiParmItem = types.MethodType(removeMultiParmItem,
-                                                     None,
-                                                     hou.ParmTuple)
-
-hou.ParmTuple.getMultiParmInstances = types.MethodType(getMultiParmInstances,
-                                                       None,
-                                                       hou.ParmTuple)
-
-hou.ParmTuple.getMultiParmInstanceValues = types.MethodType(getMultiParmInstanceValues,
-                                                            None,
-                                                            hou.ParmTuple)
 
