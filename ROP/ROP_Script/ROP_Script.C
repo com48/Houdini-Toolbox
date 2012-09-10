@@ -184,7 +184,8 @@ ROP_Script::renderFrame(fpreal time, UT_Interrupt *)
         // Run the statements in a new context and store the result.
         result = PYrunPythonStatementsInNewContext(command);
         // Add a node error if necessary.
-        addPythonNodeError(result);
+        if (result.myExceptionClass)
+            addPythonNodeError(result);
     }
     // If the language is 'hscript', or any other value, run the command
     // as hscript.
